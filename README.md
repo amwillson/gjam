@@ -29,6 +29,12 @@ This repository is entirely built in the R environment using R version 4.3.1.
 * `tidyr` v. 1.3.0
 * `utils` v 4.3.1
 * `virids` v. 0.6.3
+* `readr` v. 2.1.5
+* `plyr` v. 1.8.9
+* `RColorBrewer` v. 1.1-3
+* `gridGraphics` v. 0.5-1
+* `patchwork` v. 1.2.0
+* `pROC` v. 1.18.5
 
 # Directory structure
 
@@ -199,17 +205,25 @@ This repository is entirely built in the R environment using R version 4.3.1.
     * fSensGibbs: dataframe with 3200 samples. Number of columns differs according to the number of parameters in the specified model. Columns are the covariance between X and the responses they elicit from Y. See Clark et al. (2017) for more information. Also includes chain (1-4) and iter (201-1000) columns for the MCMC chain and MCMC iteration. iter starts at 201 because burn-in has already been removed.
     * sgibbs: dataframe with 3200 samples. Number of columns differs according to the number of parameters in the specified model. Columns are covariances between response variables. See Clark et al. (2017) for more information. Also includes chain (1-4) and iter (201-1000) columns for the MCMC chain and MCMC iteration. iter starts at 201 because burn-in has already been removed.
     
-* **8.Visualize.R**: This script produces figures used in Shuman et al. (in prep) for both community-level and biome-level runs, depending on the input called into the script and the designation of "all" (community-level) or "reduced" (biome-level) at the beginning of the script. The script uses the output of 7.Combine.R, but the specific input depends on the simulation of interest.
+* **8.Visualize.R**: This script produces figures used in Shuman et al. (in prep) for both community-level and biome-level runs, depending on the input called into the script and the designation of "all" (community-level) or "reduced" (ecosystem-level) at the beginning of the script. The script uses the output of 7.Combine.R, but the specific input depends on the simulation of interest.
   * Inputs: combined.RData file from the specified subdirectory of the out/ folder. The file is specified by modifying line 11.
-  * Outputs: none. Figures produced
-
+  * Outputs: Figures produced. Additionally, the correlation plots produced near the end of the script are saved and used within this script to produce a multi-panel correlation plot figure (line 776) depicting the results from both the "all" (community-level) and "reduced" (ecosystem-level) designations together. Those saved objects are:
+    * out/all_taxa_corrplot.RData
+    * out/reduced_taxa_corrplot.RData
+   
 * **9.Predict_OOS.R**: This script uses the model fit of one of the simulations from 6.Run to predict the out-of-sample data. The type of prediction here predicts the response variable only from the environmental covariate sand does not take into account the covariance between taxa or biomes. Visualization is included in the same script.
   * Inputs:
     * The global environment RData file for the first chain of any of the four model runs. The first chain is specified as follows, using the All_taxa\~all_cov_ASPECT model run type as an example: out/All_taxa\~all_cov_ASPECT/all_taxa-all_cov_ASPECT_1.RD ta
     * The out-of-sample data that fits the model run type. One of the following:
       * GJAMDATA/Withheld for Validation/validation_processed_xydata_fixmarea_reduced.R ata: for All_taxa model runs 
       * GJAMDATA/Withheld for Validation/validation_processed_xydata_fixmarea_reduced_e ecosystem.RData for Reduced_taxa model runs
-  * Outputs: none saved. This is the last step, so all analyses of the validation are done in the same step
+  * Outputs:
+    * Objects are saved to be used when calculating the number of corners predicted correctly/incorrectly in 10.Visualize_OOS.R
+      * out/comp_envi_all.rds: non-conditional predictions at the taxon-level
+      * out/comp_envi_reduced.rds: non-conditional predictions at the ecosystem-level
+    * Objects are saved to create a multi-panel plot with the predicted prbability of presence for both the unconditional and conditional OOS experiments
+     * out/OOS_uncond_all.RData: unconditional probability of presence predictions at the taxon-level 
+     * out/OOS_uncond_reduced.RData unconditional probability of presence predictions at the ecosystem-level 
 
 * **9.Predict_OOS_conditional.R**: This script is similar to 9.Predict_OOS.R and uses the same inputs. The difference is that the type of prediction implemented in this script accounts for the covariance between taxa or ecosystem types, which we hypothesize will improve prediction.
   * Inputs:
@@ -217,9 +231,24 @@ This repository is entirely built in the R environment using R version 4.3.1.
     * The out-of-sample data that fits the model run type. One of the following
       * GJAMDATA/Withheld for Validation/validation_processed_xydata_fixmarea_reduced.R ata: for All_taxa model runs
       * GJAMDATA/Withheld for Validation/validation_processed_xydata_fixmarea_reduced_ecosystem.Rdata for Reduced_taxa model runs
-  * Outputs: the validation is computationally intensive, so the out-of-sample prediction for the All_taxa~all_cov_NOASPECT and Reduced_taxa~all_cov_NOASPECT model run type are saved as intermediate outputs as follows:
-    * out/cond_pred_all_taxa.RData: conditional prediction with All_taxa model run type
-    * out/cond_pred_reduced_taxa.RData: conditional prediction with Reduced_taxa model run type
+  * Outputs:
+    * The validation is computationally intensive, so the out-of-sample prediction for the All_taxa~all_cov_NOASPECT and Reduced_taxa~all_cov_NOASPECT model run type are saved as intermediate outputs as follows:
+      * out/cond_pred_all_taxa.RData: conditional prediction with All_taxa model run type
+      * out/cond_pred_reduced_taxa.RData: conditional prediction with Reduced_taxa model run type
+    * Objects are saved to be used when calculating the number of corners predicted correctly/incorrectly in 10.Visualize_OOS.R
+      * out/comp_MES_all.rds: conditional predictions at the taxon-level
+      * out/comp_MES_reduced.rds: conditional predictions at the ecosystem-level
+    * Objects are saved to create a multi-panel plot with the predicted prbability of presence for both the unconditional and conditional OOS experiments
+     * out/OOS_cond_all.RData: conditional probability of presence predictions at the taxon-level 
+     * out/OOS_cond_reduced.RData conditional probability of presence predictions at the ecosystem-level 
+ 
+* **10.Visualize_OOS.R**: This script produces statistics and figures reported in Shuman et al. (in prep) for assessing the prediction ability of the ecosystem-level and taxon-level out-of-sample (OOS) experiments, depending on the input called into the script and the designation of "all" (community-level) or "reduced" (ecosystem-level) at the beginning of the script. The script uses the outputs of 9.Predict_OOS.R and 9.Predict_OOS_conditional.R, but the specific input depends on the simulation of interest.
+  * Inputs: File from the out/ folder. The exact files are specified by designating the "type" as "all" (community-level) or "reduced" (ecosystem-level):
+    * comp_envi_all.rds
+    * comp_MES_all.rds
+    * comp_envi_reduced.rds
+    * comp_MES_reduced.rds
+  * Outputs: none. Statistics and figures produced
     
 * **utils.R**: This script contains utility functions for the code. Specifically, there is a function for manually calculating the Gelman Rubin diagnostic for assessing chain convergence because our output is not in the proper format to use the default functions available in R. I additionally removed any identical chains (usually 2/4) from the output prior to calculating the diagnostic statistic. The identical chains are an artifact of the gjam function and cannot be avoided to the authors' knowledge. Removing the identical chains offers a more conservative view of chain convergence.
   
